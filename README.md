@@ -2,7 +2,7 @@
 
 Real-time surplus food donation platform that connects donors with nearby NGOs, so good food reaches people instead of bins.
 
-**Live demo:** https://YOUR-APP.vercel.app
+**Live demo:** https://zerowastebite-eight.vercel.app
 
 ## Features
 - Donor and NGO accounts, with sign-up by email or mobile number

@@ -113,3 +113,65 @@ table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left
   .nav a{font-size:.78rem;padding:.55rem .4rem;text-align:center}.top-in .brand span{display:none}.row{grid-template-columns:1fr}main{padding-bottom:5.5rem}.foot{padding-bottom:4.5rem}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== Mobile scalability upgrade ===== */
+/* Cards never overflow narrow phones (was minmax(300px,1fr)) */
+.grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.stats{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+/* Long addresses, emails and names wrap instead of stretching the page */
+.don,.meta,.note,.card,td,th,.legal,.consent{overflow-wrap:anywhere}
+img,svg,video{max-width:100%}
+.tblwrap{-webkit-overflow-scrolling:touch}
+/* Mobile browsers: use the real visible height (address bar aware) */
+@supports(height:100dvh){
+  #app,.auth{min-height:calc(100dvh - 88px)}
+  .consent .scroll{max-height:52dvh}
+}
+/* Notch / landscape safe areas */
+.top-in,main,.foot,.legal,.consent{padding-left:max(1.2rem,env(safe-area-inset-left));padding-right:max(1.2rem,env(safe-area-inset-right))}
+/* Touch devices: comfortable tap targets, no sticky hover */
+@media(pointer:coarse){
+  .btn,.btn.sm,.tabs button,.chips button,.seg span,.linkbtn{min-height:44px}
+  .btn.sm{padding:.7rem 1rem}
+  .chips button{padding:.55rem .9rem}
+  .tabs button{padding:.6rem 1.1rem}
+  input,select,textarea{min-height:46px;font-size:16px}
+  .check input{width:22px;height:22px;margin-top:.1rem}
+}
+/* Phones and small tablets */
+@media(max-width:860px){
+  .top-in{gap:.5rem}
+  .page-h{align-items:flex-start}
+  .page-h .btn{width:100%}
+  .nav a{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center}
+  #toasts{left:1rem;right:1rem;bottom:calc(5.2rem + env(safe-area-inset-bottom));max-width:none}
+  .consent .btns .btn{flex:1 1 100%}
+  .formcard{max-width:100%}
+  .authwrap{padding-top:.8rem}
+}
+/* Small phones (360px and below) */
+@media(max-width:380px){
+  html{font-size:15px}
+  h1{font-size:1.7rem}
+  .authcard h2{font-size:1.45rem}
+  .roles{grid-template-columns:1fr}
+  .phone{grid-template-columns:84px 1fr}
+  .card{padding:1rem}
+  .stat b{font-size:1.6rem}
+  .nav a{font-size:.72rem;padding:.5rem .2rem}
+  .don header{flex-wrap:wrap}
+  .act input{width:100%}
+  .brandpanel{padding:1.2rem}
+}
+/* Very small / old phones (320px) */
+@media(max-width:340px){
+  .top-in{padding-left:.7rem;padding-right:.7rem}
+  main{padding-left:.7rem;padding-right:.7rem}
+  .theme,.iconbtn{width:38px;height:38px}
+}
+/* Landscape phones: keep bottom bar slim */
+@media(max-width:860px) and (max-height:480px){
+  .nav a{min-height:40px}
+  main{padding-bottom:4.5rem}
+  .consent .scroll{max-height:40vh}
+}

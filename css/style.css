@@ -182,3 +182,10 @@ img,svg,video{max-width:100%}
   .top-in{justify-content:space-between}
   .tools{margin-left:auto}
 }
+
+/* Fix: checkbox was stretched by the touch-size input rule and sat below its text */
+.check{align-items:flex-start}
+.check input[type=checkbox]{flex:none;width:22px;height:22px;min-height:0;padding:0;margin:.1rem 0 0;accent-color:var(--primary)}
+.check input[type=checkbox]:focus{box-shadow:none}
+.check input[type=checkbox]:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.role input,.seg input{min-height:0}

@@ -175,3 +175,10 @@ img,svg,video{max-width:100%}
   main{padding-bottom:4.5rem}
   .consent .scroll{max-height:40vh}
 }
+
+/* Fix: backdrop-filter on .top trapped the fixed bottom nav inside the header and hid the bell, theme toggle and profile buttons */
+@media(max-width:860px){
+  .top{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}
+  .top-in{justify-content:space-between}
+  .tools{margin-left:auto}
+}

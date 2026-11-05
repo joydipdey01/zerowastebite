@@ -189,3 +189,16 @@ img,svg,video{max-width:100%}
 .check input[type=checkbox]:focus{box-shadow:none}
 .check input[type=checkbox]:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
 .role input,.seg input{min-height:0}
+
+/* v2: roles, listing types, plans, cookie notice */
+@media(min-width:861px){.roles{grid-template-columns:repeat(3,1fr)}}
+form[data-r=buyer] .x-biz,form[data-r=buyer] .x-sup,form[data-r=ngo] .x-sup,form[data-r=supplier] .x-ngo,form[data-r=buyer] .x-ngo,form[data-k=free] .x-disc,form[data-k=discount] .x-free{display:none}
+.chip.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.chip.warn{background:var(--accent-bg);color:var(--accent)}
+s{color:var(--muted)}
+input[type=file]{width:100%;max-width:100%;font:inherit;padding:.6rem;border:1.5px dashed var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:1rem}
+.plans .card b{display:block;font:700 1.6rem 'Bricolage Grotesque',sans-serif;margin:.2rem 0 .5rem}
+.cookiebar{position:fixed;left:.8rem;right:.8rem;bottom:calc(4.6rem + env(safe-area-inset-bottom));z-index:40;max-width:620px;margin:auto;display:flex;gap:.8rem;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:.75rem .9rem;font-size:.85rem}
+.cookiebar p{margin:0;flex:1}
+@media(min-width:861px){.cookiebar{bottom:1rem}}

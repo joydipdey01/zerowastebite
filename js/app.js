@@ -5,7 +5,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const root = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const go = h => { location.hash = h; };
-let sb, session = null, uid = null, profile = null, flow = {}, resetting = false, view = '', period = 'day', liveLoc = null, chan = null, pendingDoc = null;
+let sb, session = null, uid = null, profile = null, flow = {}, resetting = false, view = '', period = 'day', liveLoc = null, chan = null, shown = false;
 
 /* ---------- utilities ---------- */
 function toast(m, bad) { const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = m; t.setAttribute('role', bad ? 'alert' : 'status'); $('#toasts').append(t); setTimeout(() => t.remove(), 4800); }
@@ -34,26 +34,27 @@ const THEME = '<button class="theme" data-a="theme" type="button" aria-label="Sw
 
 /* ---------- legal text ---------- */
 const policy = () => `<h2>1. Who we are</h2><p>ZeroWasteBite connects food suppliers (restaurants, hotels, cafes, bakeries, caterers and event venues), NGOs and volunteers, and buyers, so surplus food is donated or sold at a discount instead of being thrown away. It is operated by Joydip Dey ("we", "us").</p>
-<h2>2. What we collect</h2><ul><li><b>Account details:</b> your name, role (supplier, NGO or buyer), email address and/or mobile number, and an encrypted password.</li><li><b>Business details:</b> the restaurant, cafe or organisation name of suppliers and NGOs.</li><li><b>Supplier verification:</b> your FSSAI licence number and a photo of your FSSAI certificate.</li><li><b>Food listings:</b> food name, quantity, best-before time, pickup address, notes, and the original and sale price of discounted food.</li><li><b>Orders:</b> the portions a buyer reserves, the amounts, the buyer's name and mobile number, and the order status.</li><li><b>Location:</b> the address you type, and your precise coordinates only when you press "Use live location" and allow your browser to share them. We never track you in the background.</li><li><b>Activity:</b> accepted, completed and cancelled pickups and orders, number of people served, and in-app notifications.</li></ul>
-<h2>3. Why we use it</h2><ul><li>To create your account, verify you with a one-time code and keep you signed in.</li><li>To check that suppliers hold an FSSAI licence and to mark verified suppliers.</li><li>To show free listings to nearby NGOs and discounted listings to nearby buyers, send alerts, and manage pickups and reservations.</li><li>To calculate your impact dashboard (meals, people fed, food saved, CO2e avoided, money recovered or saved).</li><li>To keep the platform safe and prevent misuse.</li></ul>
-<h2>4. Who can see what</h2><ul><li>NGOs see the food name, quantity, best-before time, pickup address, supplier name and FSSAI number of available free listings.</li><li>Buyers see the same details for discounted listings, plus the price and portions left.</li><li>A supplier's phone number is shown only to the NGO that accepted that pickup or the buyer who reserved. The NGO's name and phone number are shown to the supplier after acceptance, and a buyer's name and phone number are shown to the supplier of that order.</li><li>Your FSSAI certificate photo is stored privately. Only you and the ZeroWasteBite administrators who review it can open it. It is never shown to other users.</li><li>Other users never see your email address. The public login page shows only anonymous platform totals.</li><li>We do not sell your data or show advertising.</li></ul>
-<h2>5. Services we rely on</h2><p>Your data and verification photo are stored and processed by Supabase (database, authentication, file storage and OTP delivery, including email and SMS providers). The site is hosted on Vercel. Address search and reverse lookup use OpenStreetMap Nominatim, and map links open Google Maps. Those services receive only what is needed to perform the request.</p>
+<h2>2. What we collect</h2><ul><li><b>Account details:</b> your name, role (supplier, NGO or buyer), email address and/or mobile number, and an encrypted password.</li><li><b>Business details:</b> the business, stall, event or organisation name of suppliers and NGOs.</li><li><b>Food listings:</b> food name, quantity, best-before time, pickup address, notes, and the original and sale price of discounted food.</li><li><b>Orders:</b> the portions a buyer reserves, the amounts, the buyer's name and mobile number, and the order status.</li><li><b>Location:</b> the address you type, and your precise coordinates only when you press "Use live location" and allow your browser to share them. We never track you in the background.</li><li><b>Activity:</b> accepted, completed and cancelled pickups and orders, number of people served, and in-app notifications.</li><li><b>Ratings and reports:</b> the star ratings you give, and for a food report, the reason you write and the photo you upload.</li></ul>
+<h2>3. Why we use it</h2><ul><li>To create your account, verify you with a one-time code and keep you signed in.</li><li>To review food reports, ratings and warnings so that spoiled food and fake reports are dealt with fairly.</li><li>To show free listings to nearby NGOs and discounted listings to nearby buyers, send alerts, and manage pickups and reservations.</li><li>To calculate your impact dashboard (meals, people fed, food saved, CO2e avoided, money recovered or saved).</li><li>To keep the platform safe and prevent misuse.</li></ul>
+<h2>4. Who can see what</h2><ul><li>NGOs see the food name, quantity, best-before time, pickup address, supplier name and average star rating of available free listings.</li><li>Buyers see the same details for discounted listings, plus the price and portions left.</li><li>A supplier's phone number is shown only to the NGO that accepted that pickup or the buyer who reserved. The NGO's name and phone number are shown to the supplier after acceptance, and a buyer's name and phone number are shown to the supplier of that order.</li><li>A food report, with its reason and photo, can be seen only by you and the ZeroWasteBite administrators. The supplier is told who reported, but never sees the photo. When you rate food, the supplier sees your name and your rating.</li><li>Other users never see your email address. The public login page shows only anonymous platform totals.</li><li>We do not sell your data or show advertising.</li></ul>
+<h2>5. Services we rely on</h2><p>Your data and report photos are stored and processed by Supabase (database, authentication, file storage and OTP delivery, including email and SMS providers). The site is hosted on Vercel. Address search and reverse lookup use OpenStreetMap Nominatim, and map links open Google Maps. Those services receive only what is needed to perform the request.</p>
 <h2>6. Payments</h2><p>Discounted food is paid for directly between the buyer and the supplier at pickup. We do not collect or store card or bank details. If online payments are added, a payment provider will process them, and we will update this policy and ask for your consent again.</p>
 <h2>7. Cookies and local storage</h2><p>We use only essential browser storage. See our <a href="#/cookies">Cookie Policy</a>.</p>
-<h2>8. Retention and your rights</h2><p>We keep your data while your account exists. You can edit your details on the Profile page and permanently delete your account, listings, orders and verification document there at any time. You may also email us to ask for a copy of your data or a correction. We may keep minimal records where the law requires it.</p>
-<h2>9. Security</h2><p>Data is encrypted in transit, passwords are hashed, verification photos are private, and database access rules ensure you can only read the records that concern you. No system is perfectly secure, so please use a strong, unique password.</p>
+<h2>8. Retention and your rights</h2><p>We keep your data while your account exists. You can edit your details on the Profile page and permanently delete your account, listings and orders there at any time. You may also email us to ask for a copy of your data or a correction. We may keep minimal records where the law requires it.</p>
+<h2>9. Security</h2><p>Data is encrypted in transit, passwords are hashed, report photos are private, and database access rules ensure you can only read the records that concern you. No system is perfectly secure, so please use a strong, unique password.</p>
 <h2>10. Children</h2><p>ZeroWasteBite is for people aged 18 and over.</p>
 <h2>11. Changes and contact</h2><p>If this policy changes in a meaningful way we will ask for your consent again. Questions: <a href="mailto:${esc(C.SUPPORT_EMAIL)}">${esc(C.SUPPORT_EMAIL)}</a>.</p>`;
 const terms = () => `<h2>1. Purpose</h2><p>ZeroWasteBite only connects suppliers, NGOs and buyers. We do not prepare, inspect, store, sell, transport or deliver food, and we are not a party to any donation or sale.</p>
-<h2>2. Food safety</h2><p>Suppliers must hold a valid FSSAI licence or registration and list only food that is safe to eat, correctly described and within its best-before time. NGOs and buyers must check the food on collection and may refuse anything that looks unsafe.</p>
-<h2>3. Accounts and verification</h2><p>Give accurate details, keep your password private and do not impersonate another person or organisation. Suppliers must give their restaurant or cafe name, a true FSSAI licence number and a clear photo of the certificate. NGOs must give their organisation name and represent a genuine charitable or volunteer activity. Buyers must be 18 or over. We may review documents, mark an account as verified, ask for more proof, or suspend an account. A "verified" mark means we reviewed the documents. It is not an inspection and not a guarantee about any food.</p>
+<h2>2. Food safety</h2><p>Suppliers (restaurants, cafes, food vendors, event organisers and others) do not need to upload any licence to list food here, but must list only food that is safe to eat, correctly described and within its best-before time, and must follow any food-safety rules that apply to them by law. NGOs and buyers must check the food on collection and may refuse anything that looks unsafe.</p>
+<h2>3. Accounts and verification</h2><p>Give accurate details, keep your password private and do not impersonate another person or organisation. Suppliers must give their business, stall or event name. NGOs must give their organisation name and represent a genuine charitable or volunteer activity. Buyers must be 18 or over. We may ask for more proof, warn, suspend or permanently remove an account.</p>
 <h2>4. Free donations</h2><p>Donations are always free for NGOs. NGOs must distribute donated food free of charge and must not resell it.</p>
 <h2>5. Discounted sales and fees</h2><p>Suppliers set the original and the sale price. A buyer's reservation holds the chosen portions until the best-before time. Payment is made directly to the supplier at pickup, unless online payment is introduced later. ZeroWasteBite charges the supplier a service fee on each completed sale (currently ${Math.round((C.SERVICE_FEE_PCT ?? 0.1) * 100)}% of the sale value), shown in the Orders page. Fees may change after the pilot, with notice. Either side may cancel a reservation before pickup. Refunds and disputes are between the buyer and the supplier.</p>
 <h2>6. Supplier plans</h2><p>The Plans page shows the planned supplier plans. Paid plans are not billable yet, and nobody is charged until they are launched with clear notice.</p>
-<h2>7. Acceptable use</h2><p>Do not post false listings or prices, spam, abuse other users, upload documents that are not yours, or attempt to break or overload the service. We may suspend accounts that do.</p>
+<h2>7. Acceptable use</h2><p>Do not post false listings or prices, spam, abuse other users, upload photos that are not yours, file false food reports, or attempt to break or overload the service. We may suspend accounts that do.</p>
 <h2>8. Home delivery</h2><p>Home delivery is planned for the future and is not available yet.</p>
 <h2>9. Liability</h2><p>The service is provided "as is". To the extent allowed by law, we are not liable for the quality of donated or sold food or for arrangements between suppliers, NGOs and buyers.</p>
-<h2>10. Privacy and cookies</h2><p>Our <a href="#/privacy">Privacy Policy</a> and <a href="#/cookies">Cookie Policy</a> explain how we handle your data.</p>`;
+<h2>10. Reports, ratings and warnings</h2><p>After you accept or buy food you can rate it and report it as spoiled by sending a photo and a reason. Our admin team reviews every report. If the food is confirmed spoiled, the supplier receives a final warning, and one more confirmed case can lead to permanent removal from ZeroWasteBite. If a report is found to be fake, the supplier is told, the reporter receives a warning, and one more fake report can lead to permanent removal. Admin decisions are final on this platform.</p>
+<h2>11. Privacy and cookies</h2><p>Our <a href="#/privacy">Privacy Policy</a> and <a href="#/cookies">Cookie Policy</a> explain how we handle your data.</p>`;
 const cookies = () => `<h2>1. What this covers</h2><p>Cookies and similar browser storage are small pieces of data saved on your device. ZeroWasteBite uses only the essential ones needed to run the site.</p>
 <h2>2. What we store</h2><ul><li><b>Sign-in session</b> (set by Supabase): keeps you logged in. Without it you would have to log in on every page.</li><li><b>zwb-theme:</b> remembers your day or night mode.</li><li><b>zwb-cookies:</b> remembers that you closed the cookie notice.</li></ul>
 <h2>3. What we do not use</h2><p>We do not use advertising, analytics or tracking cookies, and we do not share cookie data with advertisers.</p>
@@ -61,7 +62,7 @@ const cookies = () => `<h2>1. What this covers</h2><p>Cookies and similar browse
 <h2>5. Managing storage</h2><p>You can clear or block site data in your browser settings. If you block essential storage you will be logged out and the site will not work properly.</p>
 <h2>6. Changes and contact</h2><p>If we add non-essential cookies we will update this page and ask for your consent first. Questions: <a href="mailto:${esc(C.SUPPORT_EMAIL)}">${esc(C.SUPPORT_EMAIL)}</a>.</p>`;
 const LEGAL = { privacy: ['Privacy Policy', policy], terms: ['Terms of Use', terms], cookies: ['Cookie Policy', cookies] };
-const legal = t => `<div class="legal"><a href="#/${session ? '' : 'login'}" class="btn ghost sm">Back</a><h1 style="margin-top:1rem">${LEGAL[t][0]}</h1><p class="hint">Last updated: 5 November 2026</p>${LEGAL[t][1]()}</div>`;
+const legal = t => `<div class="legal"><a href="#/${session ? '' : 'login'}" class="btn ghost sm">Back</a><h1 style="margin-top:1rem">${LEGAL[t][0]}</h1><p class="hint">Last updated: 13 November 2026</p>${LEGAL[t][1]()}</div>`;
 
 /* ---------- auth screens ---------- */
 function auth(mode) {
@@ -72,16 +73,14 @@ function auth(mode) {
 <div class="field"><label for="pw">Password</label><input id="pw" name="password" type="password" autocomplete="current-password" required></div>
 <p style="text-align:right"><button type="button" class="linkbtn" data-a="to" data-h="#/forgot">Forgot password?</button></p>
 <button class="btn block">Log in</button></form><p class="switch">New here? <button class="linkbtn" data-a="to" data-h="#/signup">Create an account</button></p>`,
-    signup: `<h2>Create your account</h2><p class="hint">Join as a donor or as an NGO. It takes a minute.</p>
+    signup: `<h2>Create your account</h2><p class="hint">Join as a supplier, NGO or buyer. It takes a minute.</p>
 <form data-f="signup" data-m="email" data-r="buyer" novalidate>
 <fieldset class="roles"><legend>I am joining as</legend>
-<label class="role"><input type="radio" name="role" value="supplier"><span><b>Restaurant or cafe</b><small>Hotel, bakery, caterer or venue. FSSAI required</small></span></label>
+<label class="role"><input type="radio" name="role" value="supplier"><span><b>Food supplier</b><small>Restaurant, cafe, food vendor or event organiser</small></span></label>
 <label class="role"><input type="radio" name="role" value="ngo"><span><b>NGO or volunteer</b><small>Collect and distribute free food</small></span></label>
 <label class="role"><input type="radio" name="role" value="buyer" checked><span><b>Buyer</b><small>Reserve discounted meals nearby</small></span></label></fieldset>
 <div class="row"><div class="field"><label for="n">Full name</label><input id="n" name="name" autocomplete="name" required maxlength="100"></div>
-<div class="field x-biz"><label for="o" class="x-sup">Restaurant or cafe name</label><label for="o" class="x-ngo">Organisation name</label><input id="o" name="org" maxlength="120"></div></div>
-<div class="field x-sup"><label for="fs">FSSAI licence number</label><input id="fs" name="fssai" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="14-digit number"></div>
-<div class="field x-sup"><label for="fd">FSSAI certificate photo</label><input id="fd" name="fdoc" type="file" accept="image/jpeg,image/png,image/webp"><p class="hint">JPG, PNG or WebP, up to 5 MB. Used only to verify your business.</p></div>
+<div class="field x-biz"><label for="o" class="x-sup">Business, stall or event name</label><label for="o" class="x-ngo">Organisation name</label><input id="o" name="org" maxlength="120"></div></div>
 <fieldset><legend>Sign up with</legend><div class="seg"><label><input type="radio" name="method" value="email" checked><span>Email</span></label><label><input type="radio" name="method" value="phone"><span>Mobile number</span></label></div></fieldset>
 <div class="field only-email"><label for="e">Email address</label><input id="e" name="email" type="email" autocomplete="email"></div>
 <div class="field only-email"><label for="po">Mobile number (optional)</label><input id="po" name="phone_opt" type="tel" autocomplete="tel"><p class="hint">Shown only to the donor or NGO you are matched with.</p></div>
@@ -138,7 +137,7 @@ function card(d, extra) {
   const dist = d._km != null ? ` &middot; ${d._km < 1 ? '<1' : d._km.toFixed(1)} km away` : '';
   return `<article class="card don"><header><span><span class="chip">${esc(d.category)}</span> ${d.kind === 'discount' ? '<span class="chip">For sale</span>' : '<span class="chip ok">Free</span>'}</span>${st === 'available' ? timer(d.best_before) : `<span class="st st-${st}">${st}</span>`}</header>
 <h3>${esc(d.title)}</h3><p class="meta">${d.kind === 'discount' ? `<b>${inr(d.price)}</b> <s>${inr(d.orig_price)}</s> &middot; ${d.left_qty} of ${d.servings} left` : d.servings + ' servings'}${d.weight_kg ? ', ' + d.weight_kg + ' kg' : ''}${dist}</p>
-<p class="meta">From ${esc(d.donor_name || 'Supplier')}${d.donor_fssai ? ` &middot; FSSAI ${esc(d.donor_fssai)}${d.donor_verified ? ' (verified)' : ''}` : ''}</p><p class="meta"><a href="${mapLink(d)}" target="_blank" rel="noopener">${esc(d.address)}</a></p>${d.notes ? `<p class="meta">${esc(d.notes)}</p>` : ''}${extra || ''}</article>`;
+<p class="meta">From ${esc(d.donor_name || 'Supplier')}${ratingChip(d._r)}</p><p class="meta"><a href="${mapLink(d)}" target="_blank" rel="noopener">${esc(d.address)}</a></p>${d.notes ? `<p class="meta">${esc(d.notes)}</p>` : ''}${extra || ''}</article>`;
 }
 async function viewList() {
   const chips = [1, 2, 4, 6, 12].map(h => `<button type="button" data-a="hrs" data-h="${h}">${h} hour${h > 1 ? 's' : ''}</button>`).join('');
@@ -172,6 +171,7 @@ async function viewFeed() {
   shell('feed', '<div class="page-h"><div><h1>Available food</h1><p id="sub">Nearest first.</p></div><button class="btn ghost" data-a="here-feed">Use live location</button></div><div id="box"></div>');
   const { data, error } = await sb.from('donations').select('*').eq('status', 'available').eq('kind', 'free').gt('best_before', new Date().toISOString()).order('best_before').limit(100);
   if (error) return toast(error.message, true);
+  await attachRatings(data);
   const L = myLoc();
   data.forEach(d => { d._km = L && d.lat != null ? km(L.lat, L.lng, d.lat, d.lng) : null; });
   if (L) data.sort((a, b) => (a._km ?? 1e9) - (b._km ?? 1e9)); else $('#sub').textContent = 'Soonest to expire first. Set your location to see the nearest donations.';
@@ -183,65 +183,116 @@ async function viewPickups() {
   const { data, error } = await sb.from('donations').select('*').eq('accepted_by', uid).in('status', ['accepted', 'completed']).order('accepted_at', { ascending: false }).limit(50);
   if (error) return toast(error.message, true);
   const { data: cs } = await sb.from('donation_contacts').select('*').in('donation_id', data.map(d => d.id));
-  const ph = Object.fromEntries((cs || []).map(c => [c.donation_id, c.phone]));
-  $('#box').innerHTML = data.length ? `<div class="grid">${data.map(d => card(d, d.status === 'accepted'
+  const ph = Object.fromEntries((cs || []).map(c => [c.donation_id, c.phone])), fb = await myFeedback(data.map(d => d.id));
+  $('#box').innerHTML = data.length ? `<div class="grid">${data.map(d => card(d, (d.status === 'accepted'
     ? `<p class="meta">Donor contact: ${ph[d.id] ? `<a href="tel:${esc(ph[d.id])}">${esc(ph[d.id])}</a>` : 'not provided'}</p><div class="act"><input type="number" min="0" value="${d.servings}" aria-label="People served"><button class="btn sm" data-a="complete" data-id="${d.id}">Mark distributed</button></div>`
-    : `<p class="meta">Reached <b>${d.people_served}</b> people</p>`)).join('')}</div>` : empty('No pickups yet', 'Accept a donation from the Available food page.', '<a class="btn" href="#/feed">See available food</a>');
+    : `<p class="meta">Reached <b>${d.people_served}</b> people</p>`) + feedback(d.id, fb[d.id]))).join('')}</div>` : empty('No pickups yet', 'Accept a donation from the Available food page.', '<a class="btn" href="#/feed">See available food</a>');
 }
 async function viewAlerts() {
   shell('alerts', '<div class="page-h"><div><h1>Alerts</h1><p>Updates about your donations and pickups.</p></div></div><div class="card" id="box"></div>');
   const { data, error } = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(50);
   if (error) return toast(error.message, true);
-  $('#box').innerHTML = data.length ? data.map(n => `<div class="note ${n.read ? '' : 'un'}"><div><a href="#/${ { ngo: 'feed', supplier: 'mine', buyer: 'orders' }[profile.role] }" style="color:inherit;text-decoration:none">${esc(n.title)}</a><small>${esc(n.body)} &middot; ${ago(n.created_at)}</small></div></div>`).join('') : '<div class="empty"><h3>No alerts yet</h3></div>';
+  $('#box').innerHTML = data.length ? data.map(n => `<div class="note ${n.read ? '' : 'un'}"><div><a href="#/${ { ngo: 'feed', supplier: 'mine', buyer: 'orders' }[profile.role] }" style="color:inherit;text-decoration:none">${KIND[n.kind] || ''}${esc(n.title)}</a><small>${esc(n.body)} &middot; ${ago(n.created_at)}</small></div></div>`).join('') : '<div class="empty"><h3>No alerts yet</h3></div>';
   if (data.some(n => !n.read)) { await sb.from('notifications').update({ read: true }).eq('read', false); badge(); }
 }
 async function viewDash() {
   shell('dashboard', `<div class="page-h"><div><h1>Your impact</h1><p>${ { ngo: 'Food you collected and distributed.', buyer: 'Meals you rescued and money you saved.', supplier: 'Food you saved from going to waste.' }[profile.role] }</p></div>
 <div class="tabs" role="group" aria-label="Period">${[['day', 'Daily'], ['month', 'Monthly'], ['year', 'Yearly']].map(([k, l]) => `<button data-a="period" data-p="${k}" aria-pressed="${k === period}">${l}</button>`).join('')}</div></div><div id="box"></div>`);
+  if (profile.role === 'supplier') await loadProfile();
   const { data, error } = await sb.rpc('impact_series', { p_unit: period });
   if (error) return toast(error.message, true);
+  const rr = profile.role === 'supplier' ? ((await sb.from('ratings').select('stars,rater_name,created_at,donations(title)').order('created_at', { ascending: false }).limit(8)).data || []) : [];
   const sum = k => data.reduce((a, r) => a + Number(r[k] || 0), 0), kg = sum('kg'), amt = sum('amount');
   const max = Math.max(1, ...data.map(r => Number(r.meals))), span = { day: 'last 30 days', month: 'last 12 months', year: 'last 5 years' }[period];
-  $('#box').innerHTML = `<div class="stats"><div class="card stat"><b>${fmt(sum('meals'))}</b><span>Meals shared</span></div><div class="card stat"><b>${fmt(sum('people'))}</b><span>People fed</span></div><div class="card stat"><b>${fmt(kg)} kg</b><span>Food saved from waste</span></div><div class="card stat"><b>${fmt(kg * C.CO2E_PER_KG)} kg</b><span>CO2e avoided (estimate)</span></div><div class="card stat"><b>${fmt(sum('pickups'))}</b><span>Pickups completed</span></div>${profile.role !== 'ngo' ? `<div class="card stat"><b>${inr(amt)}</b><span>${profile.role === 'supplier' ? 'Revenue recovered (after fee)' : 'Money saved'}</span></div>` : ''}</div>
+  $('#box').innerHTML = `${warnBar()}<div class="stats"><div class="card stat"><b>${fmt(sum('meals'))}</b><span>Meals shared</span></div><div class="card stat"><b>${fmt(sum('people'))}</b><span>People fed</span></div><div class="card stat"><b>${fmt(kg)} kg</b><span>Food saved from waste</span></div><div class="card stat"><b>${fmt(kg * C.CO2E_PER_KG)} kg</b><span>CO2e avoided (estimate)</span></div><div class="card stat"><b>${fmt(sum('pickups'))}</b><span>Pickups completed</span></div>${profile.role === 'supplier' ? `<div class="card stat"><b>${profile.rating_count ? '★ ' + Number(profile.rating_avg).toFixed(1) : '–'}</b><span>${profile.rating_count ? 'Average rating (' + profile.rating_count + ')' : 'No ratings yet'}</span></div>` : ''}${profile.role !== 'ngo' ? `<div class="card stat"><b>${inr(amt)}</b><span>${profile.role === 'supplier' ? 'Revenue recovered (after fee)' : 'Money saved'}</span></div>` : ''}</div>
 <div class="card" style="margin-bottom:1.2rem"><h3>Meals per ${period === 'day' ? 'day' : period}, ${span}</h3>${data.length ? `<div class="bars" role="img" aria-label="Bar chart of meals per ${period}">${data.map(r => `<div class="bar" title="${fmtDate(r.bucket, period)}: ${r.meals} meals"><i style="--h:${Math.round(r.meals / max * 100)}%"></i>${fmtDate(r.bucket, period)}</div>`).join('')}</div>` : '<p class="meta" style="margin-top:.6rem">Completed pickups will appear here automatically.</p>'}</div>
 ${data.length ? `<div class="card tblwrap" style="margin-bottom:1.2rem"><table><thead><tr><th>${period === 'day' ? 'Date' : period === 'month' ? 'Month' : 'Year'}</th><th class="n">Pickups</th><th class="n">Meals</th><th class="n">People</th><th class="n">Food saved (kg)</th><th class="n">CO2e (kg)</th></tr></thead><tbody>${[...data].reverse().map(r => `<tr><td>${fmtDate(r.bucket, period)}</td><td class="n">${r.pickups}</td><td class="n">${r.meals}</td><td class="n">${r.people}</td><td class="n">${fmt(r.kg)}</td><td class="n">${fmt(r.kg * C.CO2E_PER_KG)}</td></tr>`).join('')}</tbody></table></div>` : ''}
-<div class="card how"><h3>How these numbers are calculated</h3><ol><li><b>Meals</b> = servings listed for donations, or portions sold in completed sales.</li><li><b>Food saved</b> = the weight the donor entered, or ${C.KG_PER_SERVING} kg per serving if left blank.</li><li><b>People fed</b> = the number the NGO confirms when marking the food distributed.</li><li><b>CO2e avoided</b> = food saved &times; ${C.CO2E_PER_KG} kg CO2e per kg. This is an estimate, not a measurement.</li><li><b>Revenue recovered</b> = sale value minus the ${FEE()}% service fee. <b>Money saved</b> = original price minus sale price, per portion.</li><li>Only <b>completed</b> pickups and sales are counted. Dates use UTC.</li></ol></div>`;
+${recentRatings(rr)}<div class="card how"><h3>How these numbers are calculated</h3><ol><li><b>Meals</b> = servings listed for donations, or portions sold in completed sales.</li><li><b>Food saved</b> = the weight the donor entered, or ${C.KG_PER_SERVING} kg per serving if left blank.</li><li><b>People fed</b> = the number the NGO confirms when marking the food distributed.</li><li><b>CO2e avoided</b> = food saved &times; ${C.CO2E_PER_KG} kg CO2e per kg. This is an estimate, not a measurement.</li><li><b>Revenue recovered</b> = sale value minus the ${FEE()}% service fee. <b>Money saved</b> = original price minus sale price, per portion.</li><li>Only <b>completed</b> pickups and sales are counted. Dates use UTC.</li></ol></div>`;
 }
 async function viewProfile() {
   const p = profile;
-  shell('profile', `<div class="page-h"><div><h1>Profile</h1><p>${ { ngo: 'NGO or volunteer account', supplier: 'Supplier account', buyer: 'Buyer account' }[p.role] } ${p.role === 'supplier' ? fssaiBadge(p) : ''}</p></div><button class="btn ghost" data-a="logout">Log out</button></div>
-<form class="card formcard" data-f="profile" novalidate><div class="row"><div class="field"><label for="n">Full name</label><input id="n" name="name" value="${esc(p.full_name)}" maxlength="100"></div><div class="field"><label for="o">${ { supplier: 'Restaurant or cafe name', ngo: 'Organisation name', buyer: 'Organisation (optional)' }[p.role] }</label><input id="o" name="org" value="${esc(p.org_name)}" maxlength="120"></div></div>
+  shell('profile', `<div class="page-h"><div><h1>Profile</h1><p>${ { ngo: 'NGO or volunteer account', supplier: 'Supplier account', buyer: 'Buyer account' }[p.role] } ${p.role === 'supplier' ? (p.rating_count ? `<span class="chip ok">★ ${Number(p.rating_avg).toFixed(1)} (${p.rating_count})</span>` : '<span class="chip">No ratings yet</span>') : ''}</p></div><button class="btn ghost" data-a="logout">Log out</button></div>
+<form class="card formcard" data-f="profile" novalidate><div class="row"><div class="field"><label for="n">Full name</label><input id="n" name="name" value="${esc(p.full_name)}" maxlength="100"></div><div class="field"><label for="o">${ { supplier: 'Business, stall or event name', ngo: 'Organisation name', buyer: 'Organisation (optional)' }[p.role] }</label><input id="o" name="org" value="${esc(p.org_name)}" maxlength="120"></div></div>
 <div class="row"><div class="field"><label for="ph">Mobile number</label><input id="ph" name="phone" type="tel" value="${esc(p.phone)}"></div><div class="field"><label>Email</label><input value="${esc(p.email)}" disabled></div></div>
 <div class="field"><label for="a">${p.role === 'ngo' ? 'Base address' : p.role === 'buyer' ? 'Your area' : 'Usual pickup address'}</label><textarea id="a" name="address" maxlength="300">${esc(p.address)}</textarea><div class="chips"><button type="button" data-a="here">Use live location</button></div>
 <input type="hidden" name="lat" value="${p.lat ?? ''}"><input type="hidden" name="lng" value="${p.lng ?? ''}"><p class="hint" id="locnote">${p.lat != null ? 'Location saved.' : p.role === 'ngo' ? 'Set this so you are matched with the nearest donations.' : p.role === 'buyer' ? 'Set this to see the nearest discounted food.' : 'Optional.'}</p></div><button class="btn">Save changes</button></form>
-${p.role === 'supplier' ? fssaiForm(false) + '<p class="meta" style="margin-top:1rem"><a href="#/plans">View supplier plans</a></p>' : ''}
+${p.role === 'supplier' ? '<p class="meta" style="margin-top:1rem"><a href="#/plans">View supplier plans</a></p>' : ''}
 <div class="card formcard" style="margin-top:1.2rem"><h3>Delete account</h3><p class="meta">Permanently removes your account, listings and alerts. Type DELETE to confirm.</p><form data-f="delete" novalidate style="display:flex;gap:.6rem;flex-wrap:wrap"><input name="confirm" style="max-width:180px" aria-label="Type DELETE"><button class="btn danger">Delete my account</button></form></div>`);
 }
 
-/* ---------- v2: buyers, discounted sales, plans, FSSAI ---------- */
+/* ---------- v2: buyers, discounted sales, plans ---------- */
 const inr = n => '₹' + fmt(n);
 const FEE = () => Math.round((C.SERVICE_FEE_PCT ?? 0.1) * 100);
-const fssaiOk = v => /^\d{14}$/.test(v);
-const fileErr = f => !f ? 'Choose a photo of your FSSAI certificate.' : !['image/jpeg', 'image/png', 'image/webp'].includes(f.type) ? 'Use a JPG, PNG or WebP photo.' : f.size > 5 * 1024 * 1024 ? 'The photo must be under 5 MB.' : '';
-async function uploadDoc(file) {
-  const path = uid + '/fssai';
-  const { error } = await sb.storage.from('fssai-docs').upload(path, file, { contentType: file.type, upsert: true });
-  if (error) throw new Error('Could not upload the certificate. Please try again.');
-  return path;
+/* ---------- v3: ratings, reports, popups ---------- */
+const KIND = { rating: '<span class="chip">Rating</span> ', report: '<span class="chip warn">Report</span> ', warning: '<span class="chip warn">Warning</span> ', greeting: '<span class="chip ok">Greeting</span> ', thanks: '<span class="chip ok">Thank you</span> ' };
+const REPORT_LABEL = { open: 'Report under review', upheld: 'Report confirmed by admin', dismissed: 'Report closed by admin' };
+const ratingChip = r => r && r.cnt > 0 ? ` &middot; <span class="rate-chip">★ ${Number(r.rating).toFixed(1)} <small>(${r.cnt})</small></span>` : ' &middot; <span class="rate-chip none">New supplier</span>';
+async function attachRatings(list) {
+  const ids = [...new Set(list.map(d => d.donor_id))]; if (!ids.length) return;
+  const { data } = await sb.rpc('supplier_ratings', { p_ids: ids });
+  const m = Object.fromEntries((data || []).map(r => [r.id, r])); list.forEach(d => { d._r = m[d.donor_id]; });
 }
-const fssaiBadge = p => p.fssai_doc_path ? (p.verified ? '<span class="chip ok">FSSAI verified</span>' : '<span class="chip">FSSAI under review</span>') : '<span class="chip warn">FSSAI missing</span>';
-const fssaiForm = gate => `<form data-f="fssai" ${gate ? '' : 'class="card formcard" style="margin-top:1.2rem"'} novalidate>${gate ? '' : `<h3>FSSAI verification ${fssaiBadge(profile)}</h3>`}
-<div class="field"><label for="fs">FSSAI licence number</label><input id="fs" name="fssai" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="14-digit number" value="${esc(profile.fssai_no)}"></div>
-<div class="field"><label for="fd">FSSAI certificate photo</label><input id="fd" name="fdoc" type="file" accept="image/jpeg,image/png,image/webp"><p class="hint">${profile.fssai_doc_path && !gate ? 'A certificate is on file. Choose a new photo only to replace it.' : 'JPG, PNG or WebP, up to 5 MB. Used only to verify your business.'}</p></div>
-<button class="btn">${gate ? 'Submit for verification' : 'Save FSSAI details'}</button></form>`;
-function docGate() {
-  view = 'docgate';
-  root.innerHTML = `<div class="consent"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem"><a class="brand" style="color:var(--ink)" href="#/">${LOGO}ZeroWasteBite</a>${THEME}</div><h1>Verify your business</h1><p class="hint">Suppliers must give an FSSAI licence number and a photo of the certificate before listing food. We review it and mark your account as verified.</p>${fssaiForm(true)}<div class="btns" style="margin-top:1rem"><button class="btn ghost" data-a="logout">Log out</button></div></div>`;
+async function myFeedback(ids) {
+  if (!ids.length) return {};
+  const [a, b] = await Promise.all([sb.from('ratings').select('donation_id,stars').in('donation_id', ids), sb.from('reports').select('donation_id,status').in('donation_id', ids)]);
+  const m = {};
+  (a.data || []).forEach(r => { (m[r.donation_id] = m[r.donation_id] || {}).rating = r.stars; });
+  (b.data || []).forEach(r => { (m[r.donation_id] = m[r.donation_id] || {}).report = r.status; });
+  return m;
 }
+const feedback = (id, s) => { s = s || {}; return `<div class="fb"><div><small>${s.rating ? 'Your rating' : 'Rate this food'}</small><span class="stars" role="group" aria-label="Star rating">${[1, 2, 3, 4, 5].map(i => `<button type="button" class="star${i <= (s.rating || 0) ? ' on' : ''}" data-a="rate" data-id="${id}" data-n="${i}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('')}</span></div>${s.report ? `<span class="chip ${s.report === 'open' ? 'warn' : ''}">${REPORT_LABEL[s.report]}</span>` : `<button type="button" class="btn ghost sm" data-a="report" data-id="${id}">Report spoiled food</button>`}</div>`; };
+const warnBar = () => profile.role === 'supplier' && profile.warnings > 0 ? `<div class="warnbar" role="alert"><b>Warning on your account.</b> Our admin team confirmed spoiled food from your listings. One more confirmed case will remove your account from ZeroWasteBite for good. Please check food carefully before you list it.</div>` : '';
+const recentRatings = rr => `<div class="card" style="margin-bottom:1.2rem"><h3>Recent ratings</h3>${rr.length ? rr.map(r => `<div class="note"><div>${'★'.repeat(r.stars)}<span class="off">${'★'.repeat(5 - r.stars)}</span> <b>${esc(r.rater_name || 'A user')}</b><small>${esc((r.donations || {}).title || 'Food')} &middot; ${ago(r.created_at)}</small></div></div>`).join('') : '<p class="meta" style="margin-top:.6rem">Ratings from NGOs and buyers will appear here.</p>'}</div>`;
+
+/* modal + popups */
+function modal(html, cls) {
+  closeModal(); const bg = document.createElement('div'); bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal ${cls || ''}" role="dialog" aria-modal="true">${html}</div>`;
+  bg.addEventListener('mousedown', e => { if (e.target === bg) closeModal(); });
+  document.body.append(bg); const f = bg.querySelector('input:not([type=hidden]),textarea,select,button'); if (f) f.focus(); return bg;
+}
+const closeModal = () => document.querySelectorAll('.modal-bg').forEach(m => m.remove());
+const POP_ICON = {
+  thanks: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.500-4.700-9.500-9.600A5.400 5.400 0 0 1 12 6.300a5.400 5.400 0 0 1 9.500 5.100C19.500 16.300 12 21 12 21Z"/></svg>',
+  greeting: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2.500 2.900 6 6.600.9-4.800 4.600 1.200 6.500L12 17.300l-5.900 3.200 1.200-6.500L2.500 9.400l6.600-.9L12 2.500Z"/></svg>',
+  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.500 2.600 20h18.800L12 3.500Z"/><path d="M12 10v4.500M12 17.500v.01"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.500 4.500 4.500L19 7.500"/></svg>'
+};
+function popup(o) {
+  const k = o.kind || 'thanks';
+  modal(`<div class="pop pop-${k}"><div class="pop-ic">${POP_ICON[k] || POP_ICON.info}</div><h2>${esc(o.title)}</h2><p>${esc(o.body)}</p><button class="btn block" data-a="closemodal">${esc(o.cta || 'Continue')}</button></div>`);
+}
+const BUY_THANKS = { kind: 'thanks', title: 'Thank you for your order!', body: 'Thank you for buying from ZeroWasteBite. Your meal is reserved, and by choosing surplus food you have saved good food from going to waste while supporting a local food supplier. Please pay the supplier at pickup, and rate the food after you collect it. Together, we are moving towards zero food waste.', cta: 'View my order' };
+const NGO_THANKS = { kind: 'thanks', title: 'Thank you for rescuing this food!', body: 'Thank you for rescuing this food and donating it to people in need. Because of you, a good meal will reach someone who needs it today instead of ending up in a bin. Please collect it before its best-before time, and mark it as distributed once it reaches people so we can record the impact you have made.', cta: 'Got it' };
+async function unreadPopup() {
+  const { data } = await sb.from('notifications').select('id,title,body,kind').eq('read', false).in('kind', ['warning', 'greeting', 'thanks']).order('created_at', { ascending: false }).limit(1);
+  const n = data && data[0]; if (!n) return;
+  popup({ kind: n.kind, title: n.title, body: n.body || '', cta: 'OK' });
+  await sb.from('notifications').update({ read: true }).eq('id', n.id); badge();
+}
+function bannedScreen() {
+  view = 'banned'; stopRealtime();
+  root.innerHTML = `<div class="center"><a class="brand" style="color:var(--ink);justify-content:center" href="#/login">${LOGO}ZeroWasteBite</a><h1 style="margin-top:1.5rem">Account removed</h1><p>This ZeroWasteBite account has been removed after our admin team reviewed repeated violations of the platform rules. If you think this is a mistake, email <a href="mailto:${esc(C.SUPPORT_EMAIL)}">${esc(C.SUPPORT_EMAIL)}</a>.</p><button class="btn" data-a="logout">Log out</button></div>`;
+}
+
+/* report photo: shrink in the browser so it stays small, kept private in the database */
+const readFile = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('Could not read the photo.')); r.readAsDataURL(f); });
+async function packPhoto(file) {
+  if (!file) throw new Error('Add a photo of the food. It is required.');
+  if (!/^image\//.test(file.type)) throw new Error('Choose an image file.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('The photo must be under 15 MB.');
+  const img = await new Promise((ok, no) => { readFile(file).then(src => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('This photo could not be opened. Try a JPG or PNG.')); i.src = src; }, no); });
+  const k = Math.min(1, 1000 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  for (const q of [0.75, 0.6, 0.45]) { const u = c.toDataURL('image/jpeg', q); if (u.length <= 560000) return u; }
+  throw new Error('The photo is too large. Try a smaller one.');
+}
+
 async function viewShop() {
   shell('shop', '<div class="page-h"><div><h1>Food near you</h1><p id="sub">Nearest first. Pay the supplier at pickup.</p></div><button class="btn ghost" data-a="here-feed">Use live location</button></div><p class="meta"><span class="chip">Home delivery coming soon</span></p><div id="box"></div>');
   const { data, error } = await sb.from('donations').select('*').eq('kind', 'discount').eq('status', 'available').gt('best_before', new Date().toISOString()).gt('left_qty', 0).order('best_before').limit(100);
   if (error) return toast(error.message, true);
+  await attachRatings(data);
   const L = myLoc();
   data.forEach(d => { d._km = L && d.lat != null ? km(L.lat, L.lng, d.lat, d.lng) : null; });
   if (L) data.sort((a, b) => (a._km ?? 1e9) - (b._km ?? 1e9)); else $('#sub').textContent = 'Soonest to expire first. Set your location to see the nearest food.';
@@ -253,15 +304,16 @@ async function viewOrders() {
   shell('orders', `<div class="page-h"><div><h1>${sup ? 'Orders' : 'My orders'}</h1><p>${sup ? 'Reservations from buyers. Mark each one when it is picked up.' : 'Pay the supplier at pickup.'}</p></div></div><div id="box"></div>`);
   const { data, error } = await sb.from('orders').select('*, donations(title,address,lat,lng,donor_name)').order('created_at', { ascending: false }).limit(50);
   if (error) return toast(error.message, true);
+  const fb = sup ? {} : await myFeedback(data.map(o => o.donation_id));
   $('#box').innerHTML = data.length ? `<div class="grid">${data.map(o => { const d = o.donations || {}, ph = o.buyer_phone;
     return `<article class="card don"><header><span class="chip">${o.qty} &times; ${inr(o.unit_price)}</span><span class="st st-${o.status === 'reserved' ? 'accepted' : o.status}">${o.status}</span></header><h3>${esc(d.title)}</h3>
 <p class="meta">Total <b>${inr(o.total)}</b>${sup ? ` &middot; you receive ${inr(o.total - o.fee)} after a ${inr(o.fee)} service fee` : ' &middot; pay at pickup'}</p>
 <p class="meta">${sup ? `Buyer: ${esc(o.buyer_name)}${ph ? ` <a href="tel:${esc(ph)}">${esc(ph)}</a>` : ''}` : `From ${esc(d.donor_name || 'Supplier')} &middot; <a href="${mapLink(d)}" target="_blank" rel="noopener">${esc(d.address)}</a>`}</p>
-<p class="meta">${ago(o.created_at)}</p>${o.status === 'reserved' ? `<div class="act">${sup ? `<button class="btn sm" data-a="pickedup" data-id="${o.id}">Mark picked up</button>` : ''}<button class="btn ghost sm" data-a="cancelorder" data-id="${o.id}">Cancel</button></div>` : ''}</article>`; }).join('')}</div>`
+<p class="meta">${ago(o.created_at)}</p>${!sup && o.status !== 'cancelled' ? feedback(o.donation_id, fb[o.donation_id]) : ''}${o.status === 'reserved' ? `<div class="act">${sup ? `<button class="btn sm" data-a="pickedup" data-id="${o.id}">Mark picked up</button>` : ''}<button class="btn ghost sm" data-a="cancelorder" data-id="${o.id}">Cancel</button></div>` : ''}</article>`; }).join('')}</div>`
     : empty('No orders yet', sup ? 'Reservations for your discounted listings will appear here.' : 'Reserve nearby discounted food and it will appear here.', sup ? '' : '<a class="btn" href="#/shop">Find food</a>');
 }
 function viewPlans() {
-  const P = [['Free Starter', '₹0', 'Free and discounted listings, impact dashboard and FSSAI verification badge.'], ['Growth', '₹299/mo', 'Premium surplus and impact reports.'], ['Business', '₹799/mo', 'Everything in Growth, for busy high-volume kitchens.'], ['Enterprise', 'Custom', 'Multi-branch dashboards and verified impact reports for sponsors.']];
+  const P = [['Free Starter', '₹0', 'Free and discounted listings, impact dashboard and supplier rating badge.'], ['Growth', '₹299/mo', 'Premium surplus and impact reports.'], ['Business', '₹799/mo', 'Everything in Growth, for busy high-volume kitchens.'], ['Enterprise', 'Custom', 'Multi-branch dashboards and verified impact reports for sponsors.']];
   shell('plans', `<div class="page-h"><div><h1>Supplier plans</h1><p>Donations are always free for NGOs. A ${FEE()}% service fee applies to discounted sales on every plan.</p></div></div>
 <div class="plans">${P.map((p, i) => `<div class="card"><h3>${p[0]}</h3><b>${p[1]}</b><p class="meta">${p[2]}</p>${i ? `<a class="btn ghost sm" href="mailto:${esc(C.SUPPORT_EMAIL)}?subject=${encodeURIComponent('ZeroWasteBite ' + p[0] + ' plan waitlist')}">Join waitlist</a>` : '<span class="chip ok">Your plan</span>'}</div>`).join('')}</div>
 <p class="hint" style="margin-top:1rem">Paid plans open after the pilot. Nobody is charged yet, and final plan features are set with pilot feedback.</p>`);
@@ -279,7 +331,7 @@ function cookiebar() {
 function startRealtime() {
   if (chan) return;
   chan = sb.channel('zwb-' + uid)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + uid }, p => { toast(p.new.title + '. ' + (p.new.body || '')); badge(); if (['feed', 'pickups', 'mine', 'alerts', 'shop', 'orders'].includes(view)) route(); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + uid }, p => { const n = p.new; if (['warning', 'greeting', 'thanks'].includes(n.kind)) popup({ kind: n.kind, title: n.title, body: n.body || '', cta: 'OK' }); else toast(n.title + '. ' + (n.body || '')); badge(); if (['feed', 'pickups', 'mine', 'alerts', 'shop', 'orders'].includes(view)) route(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => { if (['feed', 'pickups', 'mine', 'shop', 'orders'].includes(view)) route(); })
     .subscribe();
 }
@@ -293,12 +345,10 @@ async function route() {
   if (!session) { if (r === 'declined') return declined(); if (['login', 'signup', 'forgot'].includes(r)) return auth(r); if (r === 'verify' && flow.kind) return auth('verify'); return go('#/login'); }
   if (!profile || profile.id !== uid) await loadProfile();
   if (!profile) { root.innerHTML = '<div class="center"><h1>Setting up your account</h1><p>Your profile is not ready yet. Refresh in a few seconds.</p><button class="btn" onclick="location.reload()">Refresh</button></div>'; return; }
+  if (profile.banned) return bannedScreen();
   if (!profile.privacy_accepted_at || profile.privacy_version !== C.POLICY_VERSION) return r === 'declined' ? declined() : consent();
-  if (profile.role === 'supplier' && !profile.fssai_doc_path) {
-    if (pendingDoc && fssaiOk(String(profile.fssai_no || ''))) { try { const p = await uploadDoc(pendingDoc); const { error } = await sb.from('profiles').update({ fssai_doc_path: p }).eq('id', uid); if (!error) profile.fssai_doc_path = p; } catch (e) { toast(e.message, true); } pendingDoc = null; }
-    if (!profile.fssai_doc_path) return docGate();
-  }
   startRealtime();
+  if (!shown) { shown = true; unreadPopup(); }
   const routes = { dashboard: viewDash, list: viewList, mine: viewMine, feed: viewFeed, pickups: viewPickups, alerts: viewAlerts, profile: viewProfile, shop: viewShop, orders: viewOrders, plans: viewPlans };
   const only = { list: 'supplier', mine: 'supplier', plans: 'supplier', feed: 'ngo', pickups: 'ngo', shop: 'buyer' };
   const home = { ngo: 'feed', supplier: 'list', buyer: 'shop' }[profile.role];
@@ -315,8 +365,7 @@ const forms = {
       pwCheck(f.password.value, f.confirm.value);
       if (!f.agree.checked) throw new Error('Please accept the Terms of Use and Privacy Policy.');
       const role = f.role.value, org = f.org.value.trim(), meta = { role, full_name: f.name.value.trim(), org_name: role === 'buyer' ? '' : org }; let cred;
-      if (role !== 'buyer' && !org) throw new Error(role === 'ngo' ? 'Enter your organisation name.' : 'Enter your restaurant or cafe name.');
-      if (role === 'supplier') { const no = f.fssai.value.trim(), file = f.fdoc.files[0], fe = fileErr(file); if (!fssaiOk(no)) throw new Error('FSSAI licence number must be 14 digits.'); if (fe) throw new Error(fe); meta.fssai_no = no; pendingDoc = file; }
+      if (role !== 'buyer' && !org) throw new Error(role === 'ngo' ? 'Enter your organisation name.' : 'Enter your business, stall or event name.');
       if (f.method.value === 'email') { cred = { email: f.email.value.trim().toLowerCase() }; if (!isEmail(cred.email)) throw new Error('Enter a valid email address.'); if (f.phone_opt.value.trim()) meta.phone = normPhone(f.cc.value, f.phone_opt.value); }
       else { cred = { phone: normPhone(f.cc.value, f.phone.value) }; if (!/^\+\d{8,15}$/.test(cred.phone)) throw new Error('Enter a valid mobile number.'); }
       const { data, error } = await sb.auth.signUp({ ...cred, password: f.password.value, options: { data: meta } });
@@ -363,23 +412,22 @@ const forms = {
   },
   async profile(f, b) {
     await busy(b, async () => {
-      if (profile.role !== 'buyer' && !f.org.value.trim()) throw new Error(profile.role === 'ngo' ? 'Enter your organisation name.' : 'Enter your restaurant or cafe name.');
+      if (profile.role !== 'buyer' && !f.org.value.trim()) throw new Error(profile.role === 'ngo' ? 'Enter your organisation name.' : 'Enter your business, stall or event name.');
       const upd = { full_name: f.name.value.trim(), org_name: f.org.value.trim(), phone: f.phone.value.trim() || null, address: f.address.value.trim() || null, lat: f.lat.value ? +f.lat.value : null, lng: f.lng.value ? +f.lng.value : null };
       if (!upd.lat && upd.address) { const g = await fwd(upd.address); if (g) { upd.lat = g.lat; upd.lng = g.lng; } }
       const { error } = await sb.from('profiles').update(upd).eq('id', uid); if (error) throw error;
       Object.assign(profile, upd); toast('Profile saved.'); route();
     });
   },
-  async fssai(f, b) {
+  async report(f, b) {
     await busy(b, async () => {
-      const no = f.fssai.value.trim(); if (!fssaiOk(no)) throw new Error('FSSAI licence number must be 14 digits.');
-      const file = f.fdoc.files[0], upd = { fssai_no: no };
-      if (file || !profile.fssai_doc_path) { const e = fileErr(file); if (e) throw new Error(e); upd.fssai_doc_path = await uploadDoc(file); }
-      const { error } = await sb.from('profiles').update(upd).eq('id', uid); if (error) throw error;
-      profile = null; toast('Submitted. We will review your FSSAI details.'); route();
+      const reason = f.reason.value.trim(); if (reason.length < 10) throw new Error('Please explain the problem in at least 10 characters.');
+      const photo = await packPhoto(f.photo.files[0]);
+      const { error } = await sb.rpc('report_food', { p_id: f.dataset.id, p_reason: reason, p_photo: photo }); if (error) throw error;
+      popup({ kind: 'info', title: 'Report received', body: 'Thank you for telling us. Our admin team will review your photo and reason and take action if the food was really spoiled. You will get a notification with the result.', cta: 'OK' }); route();
     });
   },
-  async delete(f, b) { await busy(b, async () => { if (f.confirm.value !== 'DELETE') throw new Error('Type DELETE to confirm.'); if (profile && profile.fssai_doc_path) { try { await sb.storage.from('fssai-docs').remove([profile.fssai_doc_path]); } catch { } } const { error } = await sb.rpc('delete_my_account'); if (error) throw error; await sb.auth.signOut(); toast('Your account was deleted.'); }); }
+  async delete(f, b) { await busy(b, async () => { if (f.confirm.value !== 'DELETE') throw new Error('Type DELETE to confirm.'); const { error } = await sb.rpc('delete_my_account'); if (error) throw error; await sb.auth.signOut(); toast('Your account was deleted.'); }); }
 };
 const acts = {
   theme(el) { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('zwb-theme', t); } catch { } document.querySelectorAll('.theme').forEach(x => { x.classList.add('spin'); setTimeout(() => x.classList.remove('spin'), 450); }); },
@@ -391,19 +439,31 @@ const acts = {
   cancel(el) { if (!confirm('Cancel this listing?')) return; return busy(el, async () => { const { error } = await sb.rpc('cancel_donation', { p_id: el.dataset.id }); if (error) throw error; toast('Listing cancelled.'); route(); }); },
   period(el) { period = el.dataset.p; route(); },
   resend(el) { return busy(el, async () => { const { error } = await sb.auth.resend(flow.email ? { type: 'signup', email: flow.email } : { type: 'sms', phone: flow.phone }); if (error) throw friendly(error); toast('New code sent.'); }); },
-  reserve(el) { return busy(el, async () => { const n = parseInt(el.closest('.act').querySelector('input').value, 10); if (!(n >= 1)) throw new Error('Choose at least 1 portion.'); const { error } = await sb.rpc('reserve_donation', { p_id: el.dataset.id, p_qty: n }); if (error) { route(); throw error; } toast('Reserved. Pay the supplier at pickup.'); go('#/orders'); }); },
+  reserve(el) { return busy(el, async () => { const n = parseInt(el.closest('.act').querySelector('input').value, 10); if (!(n >= 1)) throw new Error('Choose at least 1 portion.'); const { error } = await sb.rpc('reserve_donation', { p_id: el.dataset.id, p_qty: n }); if (error) { route(); throw error; } go('#/orders'); popup(BUY_THANKS); }); },
   pickedup(el) { return busy(el, async () => { const { error } = await sb.rpc('complete_order', { p_id: el.dataset.id }); if (error) throw error; toast('Recorded. Your impact dashboard is updated.'); route(); }); },
   cancelorder(el) { if (!confirm('Cancel this order?')) return; return busy(el, async () => { const { error } = await sb.rpc('cancel_order', { p_id: el.dataset.id }); if (error) throw error; toast('Order cancelled.'); route(); }); },
   logout() { return sb.auth.signOut(); },
+  closemodal() { closeModal(); },
+  rate(el) { return busy(el, async () => { const { error } = await sb.rpc('rate_food', { p_id: el.dataset.id, p_stars: +el.dataset.n }); if (error) throw error; toast('Thanks! Your ' + el.dataset.n + '-star rating was sent to the supplier.'); route(); }); },
+  report(el) {
+    modal(`<h2>Report spoiled food</h2><p class="hint">Tell us what is wrong. Our admin team will review your report and act if the food is really spoiled. A fake report can lead to a warning and, if repeated, removal of your account.</p>
+<form data-f="report" data-id="${esc(el.dataset.id)}" novalidate style="margin-top:1rem"><div class="field"><label for="rp">Photo of the food (required)</label><input id="rp" name="photo" type="file" accept="image/*"></div>
+<div class="field"><label for="rr">Why are you reporting this food?</label><textarea id="rr" name="reason" maxlength="600" placeholder="For example: smells sour, has mould, packet was already open"></textarea></div>
+<div class="btns"><button class="btn">Submit report</button><button type="button" class="btn ghost" data-a="closemodal">Cancel</button></div></form>`);
+  },
+
   async decline() { await sb.auth.signOut(); go('#/declined'); declined(); }
 };
 const consentActs = {
   accept(el) { return busy(el, async () => { const { error } = await sb.from('profiles').update({ privacy_accepted_at: new Date().toISOString(), privacy_version: C.POLICY_VERSION }).eq('id', uid); if (error) throw error; profile.privacy_accepted_at = new Date().toISOString(); profile.privacy_version = C.POLICY_VERSION; go('#/'); route(); }); }
 };
 document.addEventListener('click', e => { const el = e.target.closest('[data-a]'); if (!el) return; const a = el.dataset.a; const fn = a === 'accept' ? (view === 'consent' ? consentActs.accept : acceptPickup) : acts[a]; if (fn) { e.preventDefault(); fn(el); } });
-function acceptPickup(el) { return busy(el, async () => { const { error } = await sb.rpc('accept_donation', { p_id: el.dataset.id }); if (error) { route(); throw error; } toast('Pickup accepted. Donor contact is in My pickups.'); go('#/pickups'); }); }
+function acceptPickup(el) { return busy(el, async () => { const { error } = await sb.rpc('accept_donation', { p_id: el.dataset.id }); if (error) { route(); throw error; } go('#/pickups'); popup(NGO_THANKS); }); }
 document.addEventListener('submit', e => { const f = e.target.closest('form[data-f]'); if (!f) return; e.preventDefault(); const h = forms[f.dataset.f]; if (h) h(f, f.querySelector('button:not([type=button])')); });
 document.addEventListener('change', e => { const n = e.target.name, f = e.target.form; if (n === 'method') f.dataset.m = e.target.value; if (n === 'role') f.dataset.r = e.target.value; if (n === 'kind') f.dataset.k = e.target.value; });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+window.ZWB_API = { get sb() { return sb; }, esc, toast, busy, modal, closeModal, LOGO, fmt, ago };
 
 /* ---------- boot ---------- */
 async function boot() {
@@ -412,7 +472,7 @@ async function boot() {
   if (!window.supabase || !C.SUPABASE_URL || /YOUR-PROJECT/.test(C.SUPABASE_URL)) { root.innerHTML = '<div class="center"><h1>Setup needed</h1><p>Add your Supabase URL and anon key in <code>js/config.js</code>, then reload. See README.md.</p></div>'; return; }
   sb = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   const { data } = await sb.auth.getSession(); session = data.session; uid = session ? session.user.id : null;
-  sb.auth.onAuthStateChange((ev, s) => { const nu = s ? s.user.id : null; if (nu === uid) { session = s; return; } uid = nu; session = s; if (!nu) { profile = null; stopRealtime(); } if (!resetting) setTimeout(route, 0); });
+  sb.auth.onAuthStateChange((ev, s) => { const nu = s ? s.user.id : null; if (nu === uid) { session = s; return; } uid = nu; session = s; if (!nu) { profile = null; shown = false; stopRealtime(); } if (!resetting) setTimeout(route, 0); });
   window.addEventListener('hashchange', route);
   route();
 }

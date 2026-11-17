@@ -71,7 +71,7 @@ A cafe has a Rs 120 meal that would be thrown away at closing time.
 16. [Setup Guide](#16-setup-guide)
 17. [Admin Login](#17-admin-login)
 18. [Notes](#18-notes)
-19. [Team](#19-team)
+19. [About](#19-about)
 
 ---
 
@@ -472,17 +472,9 @@ After running `v3_upgrade.sql`, delete the old `fssai-docs` bucket in Supabase >
 
 ---
 
-## 19. Team
+## 19. About
 
 **Team NexaForge**
-
-| Name | Role |
-|---|---|
-| Joydip Dey | Team Leader |
-| Dev Prakash Sahu | Team Member |
-| Ankita Ghosh | Team Member |
-| Javed Akhtar | Team Member |
-| Madhusudan Ojha | Team Member |
 
 Created by Joydip Dey. Contact: [nexaforge83@gmail.com](mailto:nexaforge83@gmail.com)
 
